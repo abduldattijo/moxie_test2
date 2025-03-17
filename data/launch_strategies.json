@@ -1,0 +1,132 @@
+{
+    "launch_strategies": {
+      "new_product": {
+        "bootstrapped": {
+          "get_users": [
+            "Beta testing + early adopters program",
+            "Earned PR through founder story",
+            "High-impact partnerships with complementary products"
+          ],
+          "attract_investors": [
+            "Showcasing early user testimonials and traction",
+            "Targeted outreach to angel investors",
+            "Strategic industry events participation"
+          ],
+          "build_press": [
+            "Focus on your founder journey and 'why' behind the product",
+            "Target niche industry publications before mainstream media",
+            "Create shareable data or insights that journalists need"
+          ],
+          "create_influence": [
+            "Establish thought leadership through regular content creation",
+            "Join relevant communities where your audience already exists",
+            "Form strategic advisory relationships with industry leaders"
+          ]
+        },
+        "under_1m": {
+          "get_users": [
+            "Laser-focused ad campaigns on highest-converting channels",
+            "Content marketing highlighting problem solving",
+            "Referral program with compelling incentives"
+          ],
+          "attract_investors": [
+            "Develop investor dashboard showing key growth metrics",
+            "Create case studies from early customer success stories",
+            "Strategic networking at investor-focused events"
+          ],
+          "build_press": [
+            "Develop relationships with 3-5 key journalists in your space",
+            "Create press kit with compelling visual assets and data points",
+            "Time announcement with industry event or trend"
+          ],
+          "create_influence": [
+            "Secure speaking opportunities at industry events",
+            "Develop partnerships with established brands",
+            "Create educational content that showcases your expertise"
+          ]
+        },
+        "1m_3m": {
+          "get_users": [
+            "Scale acquisition across multiple channels with proven ROI",
+            "Implement customer success program to drive referrals",
+            "Deploy targeted retargeting campaigns to convert interested prospects"
+          ],
+          "attract_investors": [
+            "Develop comprehensive data room with growth projections",
+            "Secure testimonials from industry experts and advisors",
+            "Create compelling narrative around market opportunity"
+          ],
+          "build_press": [
+            "Hire PR agency for strategic media relations",
+            "Develop newsworthy announcements timed for maximum impact",
+            "Create executive thought leadership program"
+          ],
+          "create_influence": [
+            "Launch industry report or research initiative",
+            "Develop content partnership with established media brand",
+            "Create advisory board with recognized industry figures"
+          ]
+        },
+        "3m_plus": {
+          "get_users": [
+            "Multi-channel acquisition strategy with attribution modeling",
+            "High-production brand campaign across platforms",
+            "Strategic partnerships with complementary platforms"
+          ],
+          "attract_investors": [
+            "Position for category leadership with market analysis",
+            "Develop relationships with tier-1 investment firms",
+            "Create investor event showcasing product roadmap"
+          ],
+          "build_press": [
+            "Coordinated PR campaign across mainstream and industry media",
+            "Executive placement in top-tier business publications",
+            "Newsworthy product launch event with media access"
+          ],
+          "create_influence": [
+            "Host industry conference or high-profile event",
+            "Launch podcast or video series featuring industry leaders",
+            "Create industry coalition or standards initiative"
+          ]
+        }
+      },
+      "rebrand": {
+        "bootstrapped": {
+          "get_users": [
+            "Clear communication to existing users about benefits",
+            "User-generated content campaign highlighting changes",
+            "Limited-time offers to generate excitement"
+          ]
+        },
+        "series_a": {
+          "build_press": [
+            "Big media push with embargoed announcements",
+            "Paid influencer collaborations",
+            "High-end content storytelling across channels"
+          ]
+        }
+      }
+    },
+    "next_steps": {
+      "bootstrapped": [
+        "Focus on founder-led storytelling through podcasts and guest posts",
+        "Design a customer acquisition funnel with clear conversion points",
+        "Build a weekly content calendar that reinforces your unique value prop"
+      ],
+      "under_1m": [
+        "Run small test campaigns across 3 channels to identify highest ROI",
+        "Create investor-ready metrics dashboard showing key growth indicators",
+        "Develop case studies from your first 10 customers"
+      ],
+      "1m_3m": [
+        "Implement PR outreach strategy targeting tier 1 and industry publications",
+        "Build scalable growth experiments with clear success metrics",
+        "Create quarterly investor updates highlighting traction milestones"
+      ],
+      "3m_plus": [
+        "Launch category-defining thought leadership campaign",
+        "Plan high-visibility launch event",
+        "Implement influencer partnership program"
+      ]
+    }
+  }
