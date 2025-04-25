@@ -134,10 +134,9 @@ def display_info_for_option(option):
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-
 def step_navigation(back=True, next_label="Next →", next_disabled=True, on_next=None):
     """
-    Create consistent navigation buttons with Back under Next
+    Create navigation buttons with Back and Next side by side at the bottom
     
     Args:
         back (bool): Whether to show back button
@@ -145,19 +144,33 @@ def step_navigation(back=True, next_label="Next →", next_disabled=True, on_nex
         next_disabled (bool): Whether next button should be disabled
         on_next (function, optional): Function to call on next
     """
-    # Create Next button - full width
-    if st.button(next_label, disabled=next_disabled, key="next_button", use_container_width=True):
-        if on_next:
-            on_next()
-        else:
-            st.session_state.step += 1
-            st.experimental_rerun()
+    # Add some space before the navigation buttons
+    st.write("")
+    st.write("")
     
-    # Create Back button below (if needed) - full width
+    # Create Back and Next buttons side by side
     if back:
-        if st.button("← Back", key="back_button", use_container_width=True):
-            st.session_state.step -= 1
-            st.experimental_rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("← Back", key="back_button", use_container_width=True):
+                st.session_state.step -= 1
+                st.experimental_rerun()
+        
+        with col2:
+            if st.button(next_label, disabled=next_disabled, key="next_button", use_container_width=True):
+                if on_next:
+                    on_next()
+                else:
+                    st.session_state.step += 1
+                    st.experimental_rerun()
+    else:
+        # If no back button needed, only show Next button full width
+        if st.button(next_label, disabled=next_disabled, key="next_button", use_container_width=True):
+            if on_next:
+                on_next()
+            else:
+                st.session_state.step += 1
+                st.experimental_rerun()
 
 def step_card(title, content_func):
     """
