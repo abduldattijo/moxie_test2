@@ -1,6 +1,4 @@
 import streamlit as st
-import os
-import json
 from datetime import datetime
 
 # Import components
@@ -16,8 +14,8 @@ from pages.results_page import display_results
 from pages.calendar_page import display_calendar
 
 # Import utilities
-from utils.plan_generator import generate_launch_plan
 from utils.state_management import reset_form
+from utils.data_loader import load_strategies
 
 # Set page configuration
 st.set_page_config(
@@ -56,17 +54,6 @@ if 'email_sent' not in st.session_state:
 
 if 'show_calendar' not in st.session_state:
     st.session_state.show_calendar = False
-
-# Load strategies from JSON file if it exists
-def load_strategies():
-    try:
-        if os.path.exists("data/strategies.json"):
-            with open("data/strategies.json", "r") as f:
-                return json.load(f)
-        return None
-    except Exception as e:
-        st.error(f"Error loading strategies: {e}")
-        return None
 
 # Main app
 def main():
@@ -109,3 +96,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

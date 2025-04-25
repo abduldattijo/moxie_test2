@@ -157,9 +157,21 @@ def create_suggested_milestones(launch_plan, user_email):
     Returns:
         list: List of suggested milestone dicts
     """
-    # Get launch type and funding status
-    launch_type = launch_plan["launch_summary"]["launch_type"]
-    funding_status = launch_plan["launch_summary"]["funding_status"]
+    # Get launch type and funding status with fallbacks
+    launch_type = "New Startup/Product Launch"
+    funding_status = "Bootstrapping (No external funding, self-funded)"
+    
+    # Safely access keys that might not exist
+    if "launch_summary" in launch_plan:
+        launch_type = launch_plan["launch_summary"].get("launch_type", launch_type)
+        funding_status = launch_plan["launch_summary"].get("funding_status", funding_status)
+    elif "launch_type" in launch_plan:
+        # Direct access if not nested in launch_summary
+        launch_type = launch_plan.get("launch_type", launch_type)
+    
+    if "funding_status" in launch_plan:
+        # Direct access if not nested in launch_summary
+        funding_status = launch_plan.get("funding_status", funding_status)
     
     # Base date is today
     today = datetime.date.today()
@@ -251,6 +263,7 @@ def create_suggested_milestones(launch_plan, user_email):
     
     return suggested_milestones
 
+
 def milestone_calendar_ui(user_email, launch_plan=None):
     """
     Display the milestone calendar UI
@@ -259,175 +272,183 @@ def milestone_calendar_ui(user_email, launch_plan=None):
         user_email (str): User's email
         launch_plan (dict, optional): The generated launch plan
     """
-    st.markdown("### Launch Timeline & Milestones")
-    
-    # Get existing milestones
-    user_milestones = get_user_milestones(user_email)
-    
-    # Display tabs for adding new milestones vs viewing existing ones
-    tab1, tab2 = st.tabs(["Add Milestones", "View Calendar"])
-    
-    with tab1:
-        # Option to use suggested milestones if launch plan is available
-        if launch_plan:
-            st.markdown("#### Suggested Milestones")
-            
-            suggested_milestones = create_suggested_milestones(launch_plan, user_email)
-            
-            # Display suggested milestones as selectable options
-            selected_milestones = []
-            for i, milestone in enumerate(suggested_milestones):
-                col1, col2, col3 = st.columns([1, 3, 2])
-                with col1:
-                    selected = st.checkbox("", key=f"suggested_ms_{i}")
-                    if selected:
-                        selected_milestones.append(milestone)
-                with col2:
-                    st.markdown(f"**{milestone['name']}**")
-                    st.markdown(f"_{milestone['description']}_")
-                with col3:
-                    st.markdown(f"Date: {milestone['date']}")
-                    st.markdown(f"Type: {milestone['type'].capitalize()}")
-                st.divider()
-            
-            # Add selected milestones
-            if selected_milestones and st.button("Add Selected Milestones", use_container_width=True):
-                for milestone in selected_milestones:
-                    milestone_date = datetime.datetime.strptime(milestone['date'], "%Y-%m-%d").date()
-                    add_milestone(user_email, milestone['name'], milestone_date, milestone['description'], milestone['type'])
-                st.success("Selected milestones added to your calendar!")
-                st.experimental_rerun()
-            
-            st.markdown("---")
+    try:
+        st.markdown("### Launch Timeline & Milestones")
+
+        # Get existing milestones
+        user_milestones = get_user_milestones(user_email)
         
-        # Custom milestone creation form
-        st.markdown("#### Add Custom Milestone")
+        # Display tabs for adding new milestones vs viewing existing ones
+        tab1, tab2 = st.tabs(["Add Milestones", "View Calendar"])
         
-        milestone_name = st.text_input("Milestone Name", placeholder="E.g., Website Launch")
-        milestone_date = st.date_input("Date", min_value=datetime.date.today())
-        milestone_description = st.text_area("Description", placeholder="Describe this milestone")
-        milestone_type = st.selectbox("Type", ["pre-launch", "launch", "post-launch"])
+        with tab1:
+            # Option to use suggested milestones if launch plan is available
+            if launch_plan:
+                st.markdown("#### Suggested Milestones")
+                
+                try:
+                    suggested_milestones = create_suggested_milestones(launch_plan, user_email)
+                    
+                    # Display suggested milestones as selectable options
+                    selected_milestones = []
+                    for i, milestone in enumerate(suggested_milestones):
+                        col1, col2, col3 = st.columns([1, 3, 2])
+                        with col1:
+                            selected = st.checkbox("", key=f"suggested_ms_{i}")
+                            if selected:
+                                selected_milestones.append(milestone)
+                        with col2:
+                            st.markdown(f"**{milestone['name']}**")
+                            st.markdown(f"_{milestone['description']}_")
+                        with col3:
+                            st.markdown(f"Date: {milestone['date']}")
+                            st.markdown(f"Type: {milestone['type'].capitalize()}")
+                        st.divider()
+                    
+                    # Add selected milestones
+                    if selected_milestones and st.button("Add Selected Milestones", use_container_width=True):
+                        for milestone in selected_milestones:
+                            milestone_date = datetime.datetime.strptime(milestone['date'], "%Y-%m-%d").date()
+                            add_milestone(user_email, milestone['name'], milestone_date, milestone['description'], milestone['type'])
+                        st.success("Selected milestones added to your calendar!")
+                        st.experimental_rerun()
+                except Exception as e:
+                    st.error(f"Error creating suggested milestones: {str(e)}")
+                    st.info("You can still create custom milestones below.")
+                
+                st.markdown("---")
+            
+            # Custom milestone creation form
+            st.markdown("#### Add Custom Milestone")
+            
+            milestone_name = st.text_input("Milestone Name", placeholder="E.g., Website Launch")
+            milestone_date = st.date_input("Date", min_value=datetime.date.today())
+            milestone_description = st.text_area("Description", placeholder="Describe this milestone")
+            milestone_type = st.selectbox("Type", ["pre-launch", "launch", "post-launch"])
+            
+            if st.button("Add to Calendar", use_container_width=True):
+                if milestone_name and milestone_description:
+                    success, _ = add_milestone(user_email, milestone_name, milestone_date, milestone_description, milestone_type)
+                    if success:
+                        st.success("Milestone added to your calendar!")
+                        st.experimental_rerun()
+                else:
+                    st.error("Please enter a name and description for your milestone.")
         
-        if st.button("Add to Calendar", use_container_width=True):
-            if milestone_name and milestone_description:
-                success, _ = add_milestone(user_email, milestone_name, milestone_date, milestone_description, milestone_type)
-                if success:
-                    st.success("Milestone added to your calendar!")
-                    st.experimental_rerun()
+        with tab2:
+            if not user_milestones:
+                st.info("You haven't added any milestones yet. Add some milestones to see them in your calendar.")
             else:
-                st.error("Please enter a name and description for your milestone.")
-    
-    with tab2:
-        if not user_milestones:
-            st.info("You haven't added any milestones yet. Add some milestones to see them in your calendar.")
-        else:
-            # Sort milestones by date
-            sorted_milestones = sorted(user_milestones, key=lambda x: x["date"])
-            
-            # Filter options
-            milestone_types = ["All Types"] + list(set(m["type"] for m in user_milestones))
-            filter_type = st.selectbox("Filter by type:", milestone_types)
-            
-            # Apply filters
-            filtered_milestones = sorted_milestones
-            if filter_type != "All Types":
-                filtered_milestones = [m for m in sorted_milestones if m["type"] == filter_type]
-            
-            # Calendar visualization
-            st.markdown("#### Your Launch Timeline")
-            
-            # Get min and max dates for timeline
-            min_date = min([datetime.datetime.strptime(m["date"], "%Y-%m-%d").date() for m in user_milestones])
-            max_date = max([datetime.datetime.strptime(m["date"], "%Y-%m-%d").date() for m in user_milestones])
-            
-            # Create a simple timeline visualization
-            total_days = (max_date - min_date).days
-            if total_days > 0:
-                timeline_width = 100  # percent
+                # Sort milestones by date
+                sorted_milestones = sorted(user_milestones, key=lambda x: x["date"])
                 
-                # Draw timeline
-                st.markdown(
-                    f"""
-                    <div class="timeline-container">
-                        <div class="timeline-line" style="width: {timeline_width}%"></div>
-                    """
-                    , unsafe_allow_html=True
-                )
+                # Filter options
+                milestone_types = ["All Types"] + list(set(m["type"] for m in user_milestones))
+                filter_type = st.selectbox("Filter by type:", milestone_types)
                 
-                # Add milestone markers to timeline
-                for milestone in filtered_milestones:
-                    milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d").date()
-                    days_from_start = (milestone_date - min_date).days
-                    position_percent = (days_from_start / total_days) * 100
+                # Apply filters
+                filtered_milestones = sorted_milestones
+                if filter_type != "All Types":
+                    filtered_milestones = [m for m in sorted_milestones if m["type"] == filter_type]
+                
+                # Calendar visualization
+                st.markdown("#### Your Launch Timeline")
+                
+                # Get min and max dates for timeline
+                min_date = min([datetime.datetime.strptime(m["date"], "%Y-%m-%d").date() for m in user_milestones])
+                max_date = max([datetime.datetime.strptime(m["date"], "%Y-%m-%d").date() for m in user_milestones])
+                
+                # Create a simple timeline visualization
+                total_days = (max_date - min_date).days
+                if total_days > 0:
+                    timeline_width = 100  # percent
                     
-                    # Select color based on type
-                    color = "#FF5A5F"  # default
-                    if milestone["type"] == "pre-launch":
-                        color = "#4299E1"
-                    elif milestone["type"] == "post-launch":
-                        color = "#38A169"
-                    
+                    # Draw timeline
                     st.markdown(
                         f"""
-                        <div style="left: {position_percent}%;" class="timeline-marker" style="background-color: {color};"></div>
-                        <div style="left: {position_percent}%;" class="timeline-label-top">{milestone_date.strftime("%b %d")}</div>
-                        <div style="left: {position_percent}%;" class="timeline-label-bottom">{milestone["name"]}</div>
+                        <div class="timeline-container">
+                            <div class="timeline-line" style="width: {timeline_width}%"></div>
                         """
                         , unsafe_allow_html=True
                     )
+                    
+                    # Add milestone markers to timeline
+                    for milestone in filtered_milestones:
+                        milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d").date()
+                        days_from_start = (milestone_date - min_date).days
+                        position_percent = (days_from_start / total_days) * 100
+                        
+                        # Select color based on type
+                        color = "#FF5A5F"  # default
+                        if milestone["type"] == "pre-launch":
+                            color = "#4299E1"
+                        elif milestone["type"] == "post-launch":
+                            color = "#38A169"
+                        
+                        st.markdown(
+                            f"""
+                            <div style="left: {position_percent}%;" class="timeline-marker" style="background-color: {color};"></div>
+                            <div style="left: {position_percent}%;" class="timeline-label-top">{milestone_date.strftime("%b %d")}</div>
+                            <div style="left: {position_percent}%;" class="timeline-label-bottom">{milestone["name"]}</div>
+                            """
+                            , unsafe_allow_html=True
+                        )
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
                 
-                st.markdown("</div>", unsafe_allow_html=True)
-            
-            # Display milestones in a more detailed view
-            st.markdown("#### Your Milestones")
-            
-            # Group milestones by month
-            milestones_by_month = {}
-            for milestone in filtered_milestones:
-                date_obj = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
-                month_key = date_obj.strftime("%B %Y")
-                if month_key not in milestones_by_month:
-                    milestones_by_month[month_key] = []
-                milestones_by_month[month_key].append(milestone)
-            
-            # Display milestones by month
-            for month, month_milestones in milestones_by_month.items():
-                with st.expander(month, expanded=True):
-                    for milestone in month_milestones:
-                        col1, col2, col3 = st.columns([3, 2, 1])
-                        
-                        with col1:
-                            date_obj = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
-                            st.markdown(f"**{milestone['name']}** - {date_obj.strftime('%a, %b %d')}")
-                            st.markdown(f"_{milestone['description']}_")
-                        
-                        with col2:
-                            # Display type with appropriate color
-                            type_color = "#FF5A5F"
-                            if milestone["type"] == "pre-launch":
-                                type_color = "#4299E1"
-                            elif milestone["type"] == "post-launch":
-                                type_color = "#38A169"
+                # Display milestones in a more detailed view
+                st.markdown("#### Your Milestones")
+                
+                # Group milestones by month
+                milestones_by_month = {}
+                for milestone in filtered_milestones:
+                    date_obj = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
+                    month_key = date_obj.strftime("%B %Y")
+                    if month_key not in milestones_by_month:
+                        milestones_by_month[month_key] = []
+                    milestones_by_month[month_key].append(milestone)
+                
+                # Display milestones by month
+                for month, month_milestones in milestones_by_month.items():
+                    with st.expander(month, expanded=True):
+                        for milestone in month_milestones:
+                            col1, col2, col3 = st.columns([3, 2, 1])
                             
-                            st.markdown(f"<span style='background-color: {type_color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;'>{milestone['type'].capitalize()}</span>", unsafe_allow_html=True)
+                            with col1:
+                                date_obj = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
+                                st.markdown(f"**{milestone['name']}** - {date_obj.strftime('%a, %b %d')}")
+                                st.markdown(f"_{milestone['description']}_")
                             
-                            # Generate Google Calendar link
-                            google_link = generate_google_calendar_link(user_email, milestone["id"])
-                            st.markdown(f"<a href='{google_link}' target='_blank' style='font-size: 0.8rem;'>Add to Google Calendar</a>", unsafe_allow_html=True)
-                        
-                        with col3:
-                            if st.button("Delete", key=f"del_{milestone['id']}", use_container_width=True):
-                                if delete_milestone(user_email, milestone["id"]):
-                                    st.success("Milestone deleted!")
-                                    st.experimental_rerun()
-                        
-                        st.markdown("---")
-            
-            # Export options
-            st.markdown("#### Export All Milestones")
-            
-            # Generate Google Calendar link for all milestones
-            google_link = generate_google_calendar_link(user_email)
-            st.markdown(f"<a href='{google_link}' target='_blank' class='export-button'>Export to Google Calendar</a>", unsafe_allow_html=True)
-            
-            st.info("This will open Google Calendar with your milestones ready to be added to your calendar.")
+                            with col2:
+                                # Display type with appropriate color
+                                type_color = "#FF5A5F"
+                                if milestone["type"] == "pre-launch":
+                                    type_color = "#4299E1"
+                                elif milestone["type"] == "post-launch":
+                                    type_color = "#38A169"
+                                
+                                st.markdown(f"<span style='background-color: {type_color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;'>{milestone['type'].capitalize()}</span>", unsafe_allow_html=True)
+                                
+                                # Generate Google Calendar link
+                                google_link = generate_google_calendar_link(user_email, milestone["id"])
+                                st.markdown(f"<a href='{google_link}' target='_blank' style='font-size: 0.8rem;'>Add to Google Calendar</a>", unsafe_allow_html=True)
+                            
+                            with col3:
+                                if st.button("Delete", key=f"del_{milestone['id']}", use_container_width=True):
+                                    if delete_milestone(user_email, milestone["id"]):
+                                        st.success("Milestone deleted!")
+                                        st.experimental_rerun()
+                            
+                            st.markdown("---")
+                
+                # Export options
+                st.markdown("#### Export All Milestones")
+                
+                # Generate Google Calendar link for all milestones
+                google_link = generate_google_calendar_link(user_email)
+                st.markdown(f"<a href='{google_link}' target='_blank' class='export-button'>Export to Google Calendar</a>", unsafe_allow_html=True)
+                
+                st.info("This will open Google Calendar with your milestones ready to be added to your calendar.")
+    except Exception as e:
+        st.error(f"An error occurred while displaying the calendar: {str(e)}")
+        st.info("You can go back to your launch plan and try again later.")

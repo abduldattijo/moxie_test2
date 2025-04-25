@@ -2,8 +2,8 @@ import streamlit as st
 from utils.ui_components import option_selector, step_navigation, step_card, info_box
 from utils.competitive_analysis import get_industries
 from utils.plan_generator import generate_launch_plan
-
-
+from utils.state_management import reset_form
+from utils.data_loader import load_strategies
 
 def step_1():
     """Collect basic information"""
@@ -255,7 +255,7 @@ def step_9():
         def on_generate_plan():
             # Generate plan
             with st.spinner("Creating your personalized launch plan..."):
-                from app import load_strategies
+                # Load strategies from the utility function
                 external_strategies = load_strategies()
                 st.session_state.generated_plan = generate_launch_plan(
                     st.session_state.form_data, 

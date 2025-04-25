@@ -33,23 +33,107 @@ def option_selector(options, key_prefix, selected_option=None, with_info=False):
     
     return selected
 
+
 def display_info_for_option(option):
     """Display contextual information based on the selected option"""
+    import streamlit as st
+    
     st.markdown('<div class="info-box">', unsafe_allow_html=True)
     
     # Launch Type info
-    if "New Startup/Product Launch" in option:
+    if "New Startup/Product Launch" == option or "🚀 New Startup/Product Launch" == option:
         st.markdown(
             'Your first launch moment needs to be more than an announcement. '
             'It\'s a story. Why did you build this? What\'s the problem it solves? '
             'Who will this change everything for?'
         )
-    # Add all the other options here as in the original code...
-    # ...
+    elif "Brand Repositioning" in option or "🔄 Brand Repositioning" in option:
+        st.markdown(
+            'Rebrands fail when people don\'t get why they\'re happening. '
+            'Your job is to control the narrative. Is this a bold evolution? A course correction? '
+            'A category-defining move?'
+        )
+    elif "Funding Announcement" in option or "💰 Funding Announcement" in option:
+        st.markdown(
+            'Raising capital isn\'t just a financial win—it\'s a moment that builds '
+            'credibility. But investors don\'t just bet on your idea—they bet on momentum.'
+        )
+    elif "Major Partnership" in option or "📢 Major Partnership" in option:
+        st.markdown(
+            'If you\'re making a big move, the world needs to see it. Partnerships, '
+            'media coverage, and collaborations only work when the story is compelling and shareable.'
+        )
+    
+    # Primary Goal info
+    elif "Get Users or Customers" in option or "🚀 Get Users or Customers" in option:
+        st.markdown(
+            'A great product doesn\'t sell itself. Your job is to make people '
+            'see themselves in your story and feel like this is the solution '
+            'they\'ve been waiting for.'
+        )
+    elif "Attract Investors" in option or "💰 Attract Investors" in option:
+        st.markdown(
+            'Investors don\'t fund ideas—they fund traction & narrative '
+            'control. Your launch isn\'t just about raising money, it\'s about '
+            'shaping perception.'
+        )
+    elif "Build Press & Awareness" in option or "🎙 Build Press & Awareness" in option:
+        st.markdown(
+            'Press doesn\'t just come to you—you have to make them want to '
+            'cover you. The most successful PR strategies are built on story-driven '
+            'angles that journalists need to write about.'
+        )
+    elif "Create Industry Influence" in option or "🌎 Create Industry Influence" in option:
+        st.markdown(
+            'People don\'t just want products—they want movements. To become '
+            'an industry leader, your launch needs to position you as a must-follow '
+            'voice.'
+        )
+    
+    # Audience Readiness info
+    elif "we have an engaged community" in option or "✅ Yes, we have an engaged community" in option:
+        st.markdown(
+            'Great. Your job isn\'t just to maintain them—it\'s to activate '
+            'them. Your existing audience is your biggest launch asset.'
+        )
+    elif "small following" in option or "⚡ We have a small following" in option:
+        st.markdown(
+            'Perfect. This means your audience is real—but you need wider '
+            'visibility. You don\'t need a big audience—you need a targeted, engaged one.'
+        )
+    elif "starting from scratch" in option or "❌ No, we're starting from scratch" in option:
+        st.markdown(
+            'No problem. The best way to build an audience is to leverage '
+            'existing ones. Instead of grinding to build your own, let\'s shortcut the process.'
+        )
+    
+    # Post-launch Priority info
+    elif "Scaling & repeatable traction" in option or "📈 Scaling & repeatable traction" in option:
+        st.markdown(
+            'The best post-launch strategies are repeatable. '
+            'You need to figure out what worked, scale it, and automate it.'
+        )
+    elif "Investor relations" in option or "💰 Investor relations" in option:
+        st.markdown(
+            'Your investors need to see a clear, momentum-driven path. '
+            'Your updates should highlight efficiency, customer love, and strategic moves.'
+        )
+    elif "Optimizing based on customer feedback" in option or "🛠 Optimizing based on customer feedback" in option:
+        st.markdown(
+            'Your launch was the start. Now it\'s time to listen. The '
+            'fastest-growing startups iterate aggressively.'
+        )
+    elif "Sustaining press & industry visibility" in option or "🔥 Sustaining press" in option:
+        st.markdown(
+            'You made noise—now keep it going. If you had media coverage or '
+            'early traction, your job is to stay relevant.'
+        )
     else:
         st.markdown("Select an option to learn more.")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
+
 
 def step_navigation(back=True, next_label="Next →", next_disabled=True, on_next=None):
     """
@@ -161,3 +245,7 @@ def display_user_responses_summary(form_data):
         
         st.markdown("### Post-Launch Priority")
         st.markdown(f"**Your response:** {form_data['post_launch_priority']}")
+        
+        if form_data['industry']:
+            st.markdown("### Industry")
+            st.markdown(f"**Your response:** {form_data['industry']}")

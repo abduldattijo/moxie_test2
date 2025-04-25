@@ -28,7 +28,7 @@ def load_css():
     /* Step card styling */
     .step-card {
         background-color: white;
-        padding: 1.5rem;
+        padding: 0rem;
         border-radius: 0.5rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         margin-bottom: 1.5rem;
@@ -44,7 +44,7 @@ def load_css():
     /* Info box styling */
     .info-box {
         background-color: #FFF7ED;
-        padding: 1rem;
+        padding: 0rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
     }
