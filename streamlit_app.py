@@ -1,6 +1,10 @@
 import streamlit as st
 from datetime import datetime
 
+
+
+
+
 # Import components
 from components.styling import apply_css
 from components.header import display_header, display_footer
@@ -16,6 +20,10 @@ from pages.calendar_page import display_calendar
 # Import utilities
 from utils.state_management import reset_form
 from utils.data_loader import load_strategies
+
+
+
+
 
 # Set page configuration
 st.set_page_config(

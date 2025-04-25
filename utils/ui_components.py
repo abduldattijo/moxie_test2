@@ -107,11 +107,12 @@ def display_info_for_option(option):
             'existing ones. Instead of grinding to build your own, let\'s shortcut the process.'
         )
     
-    # Post-launch Priority info
+    # Post-launch Priority info - UPDATED TEXT FOR SCALING OPTION
     elif "Scaling & repeatable traction" in option or "📈 Scaling & repeatable traction" in option:
         st.markdown(
-            'The best post-launch strategies are repeatable. '
-            'You need to figure out what worked, scale it, and automate it.'
+            'Most founders think the launch is the moment. It\'s not. It\'s just the beginning. '
+            'But you have to sustain attention, turn interest into conversions, and prove traction. '
+            'What is your post-launch priority?'
         )
     elif "Investor relations" in option or "💰 Investor relations" in option:
         st.markdown(
@@ -262,3 +263,10 @@ def display_user_responses_summary(form_data):
         if form_data['industry']:
             st.markdown("### Industry")
             st.markdown(f"**Your response:** {form_data['industry']}")
+
+
+
+
+
+
+
