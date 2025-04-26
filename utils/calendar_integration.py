@@ -3,6 +3,7 @@ import datetime
 import uuid
 import json
 import os
+import calendar
 
 # Dictionary to store milestone data (in a production app, this would be a database)
 MILESTONE_DATA_PATH = "data/milestones.json"
@@ -263,6 +264,134 @@ def create_suggested_milestones(launch_plan, user_email):
     
     return suggested_milestones
 
+def display_improved_timeline(milestones, deletable=False):
+    """
+    Display an improved timeline visualization of milestones
+    
+    Args:
+        milestones (list): List of milestone dictionaries
+        deletable (bool): Whether to show delete checkboxes
+    """
+    # Sort milestones by date
+    import datetime
+    
+    sorted_milestones = sorted(milestones, key=lambda x: datetime.datetime.strptime(x["date"], "%Y-%m-%d"))
+    
+    # Group milestones by type
+    grouped_milestones = {
+        'pre-launch': [],
+        'launch': [],
+        'post-launch': []
+    }
+    
+    for milestone in sorted_milestones:
+        milestone_type = milestone.get("type", "pre-launch")
+        if milestone_type in grouped_milestones:
+            grouped_milestones[milestone_type].append(milestone)
+    
+    # Store selected milestones for deletion if in deletable mode
+    if deletable and "milestones_to_delete" not in st.session_state:
+        st.session_state.milestones_to_delete = []
+    
+    # Type color mapping
+    type_colors = {
+        'pre-launch': '#4299E1',  # Blue
+        'launch': '#FF5A5F',      # Red
+        'post-launch': '#38A169'  # Green
+    }
+    
+    # Type titles
+    type_titles = {
+        'pre-launch': '🔍 Pre-Launch Phase',
+        'launch': '🚀 Launch Phase',
+        'post-launch': '📈 Post-Launch Phase'
+    }
+    
+    st.markdown("## Your Launch Timeline")
+    
+    # Get date range
+    if sorted_milestones:
+        min_date = datetime.datetime.strptime(sorted_milestones[0]["date"], "%Y-%m-%d")
+        max_date = datetime.datetime.strptime(sorted_milestones[-1]["date"], "%Y-%m-%d")
+        total_days = (max_date - min_date).days
+        
+        # Add some padding to the timeline
+        min_date = min_date - datetime.timedelta(days=2)
+        max_date = max_date + datetime.timedelta(days=2)
+        total_days = (max_date - min_date).days + 1  # Add 1 to avoid division by zero
+        
+        # Display timeline header with start and end dates
+        st.markdown(f"""
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: #666;">
+            <span>{min_date.strftime('%b %d, %Y')}</span>
+            <span>{max_date.strftime('%b %d, %Y')}</span>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Create expandable sections for each phase type
+    for phase_type in ['pre-launch', 'launch', 'post-launch']:
+        if not grouped_milestones[phase_type]:
+            continue
+            
+        with st.expander(f"{type_titles[phase_type]} ({len(grouped_milestones[phase_type])} milestones)", expanded=True):
+            # Create a visual timeline
+            if sorted_milestones:
+                st.markdown("""
+                <div style="position: relative; height: 60px; margin-bottom: 20px;">
+                    <div style="position: absolute; top: 30px; left: 0; right: 0; height: 2px; background-color: #E2E8F0;"></div>
+                """, unsafe_allow_html=True)
+                
+                # Add milestone markers
+                for milestone in grouped_milestones[phase_type]:
+                    milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
+                    position_percent = ((milestone_date - min_date).days / total_days) * 100
+                    
+                    st.markdown(f"""
+                    <div style="position: absolute; top: 26px; left: {position_percent}%; width: 10px; height: 10px; 
+                                border-radius: 50%; background-color: {type_colors[phase_type]}; transform: translateX(-5px);"></div>
+                    <div style="position: absolute; top: 40px; left: {position_percent}%; transform: translateX(-50%); 
+                                font-size: 0.7rem; white-space: nowrap;">{milestone_date.strftime('%b %d')}</div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+            
+            # List milestones with cards
+            for milestone in grouped_milestones[phase_type]:
+                milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
+                
+                # Create a row with checkbox (if deletable) and milestone info
+                cols = st.columns([0.1, 0.9]) if deletable else [st.container()]
+                
+                # Add checkbox for deletion if in deletable mode
+                if deletable:
+                    with cols[0]:
+                        milestone_id = milestone["id"]
+                        is_selected = milestone_id in st.session_state.milestones_to_delete
+                        if st.checkbox("", value=is_selected, key=f"delete_{milestone_id}"):
+                            if milestone_id not in st.session_state.milestones_to_delete:
+                                st.session_state.milestones_to_delete.append(milestone_id)
+                        else:
+                            if milestone_id in st.session_state.milestones_to_delete:
+                                st.session_state.milestones_to_delete.remove(milestone_id)
+                
+                # Display milestone card
+                with cols[-1]:
+                    st.markdown(f"""
+                    <div style="margin: 12px 0; padding: 12px; border-left: 4px solid {type_colors[phase_type]}; 
+                                background-color: #F7FAFC; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                            <span style="font-weight: 600; font-size: 1rem;">{milestone["name"]}</span>
+                            <span style="color: #666; font-size: 0.9rem;">{milestone_date.strftime('%a, %b %d')}</span>
+                        </div>
+                        <p style="margin: 0; color: #4A5568; font-size: 0.9rem;">{milestone["description"]}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+    # Return list of milestone IDs to delete
+    if deletable:
+        return st.session_state.milestones_to_delete
+    return []
+
 
 def milestone_calendar_ui(user_email, launch_plan=None):
     """
@@ -339,116 +468,38 @@ def milestone_calendar_ui(user_email, launch_plan=None):
             if not user_milestones:
                 st.info("You haven't added any milestones yet. Add some milestones to see them in your calendar.")
             else:
-                # Sort milestones by date
-                sorted_milestones = sorted(user_milestones, key=lambda x: x["date"])
+                # Use checkbox instead of toggle for edit mode
+                edit_mode = st.checkbox("Edit Mode (Select milestones to delete)", value=False)
                 
-                # Filter options
-                milestone_types = ["All Types"] + list(set(m["type"] for m in user_milestones))
-                filter_type = st.selectbox("Filter by type:", milestone_types)
+                # Use the improved timeline display with delete checkboxes if in edit mode
+                milestones_to_delete = display_improved_timeline(user_milestones, deletable=edit_mode)
                 
-                # Apply filters
-                filtered_milestones = sorted_milestones
-                if filter_type != "All Types":
-                    filtered_milestones = [m for m in sorted_milestones if m["type"] == filter_type]
-                
-                # Calendar visualization
-                st.markdown("#### Your Launch Timeline")
-                
-                # Get min and max dates for timeline
-                min_date = min([datetime.datetime.strptime(m["date"], "%Y-%m-%d").date() for m in user_milestones])
-                max_date = max([datetime.datetime.strptime(m["date"], "%Y-%m-%d").date() for m in user_milestones])
-                
-                # Create a simple timeline visualization
-                total_days = (max_date - min_date).days
-                if total_days > 0:
-                    timeline_width = 100  # percent
-                    
-                    # Draw timeline
-                    st.markdown(
-                        f"""
-                        <div class="timeline-container">
-                            <div class="timeline-line" style="width: {timeline_width}%"></div>
-                        """
-                        , unsafe_allow_html=True
-                    )
-                    
-                    # Add milestone markers to timeline
-                    for milestone in filtered_milestones:
-                        milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d").date()
-                        days_from_start = (milestone_date - min_date).days
-                        position_percent = (days_from_start / total_days) * 100
+                # Show delete button if in edit mode and milestones are selected
+                if edit_mode and milestones_to_delete:
+                    if st.button(f"Delete Selected Milestones ({len(milestones_to_delete)})", type="primary"):
+                        deleted_count = 0
+                        for milestone_id in milestones_to_delete:
+                            if delete_milestone(user_email, milestone_id):
+                                deleted_count += 1
                         
-                        # Select color based on type
-                        color = "#FF5A5F"  # default
-                        if milestone["type"] == "pre-launch":
-                            color = "#4299E1"
-                        elif milestone["type"] == "post-launch":
-                            color = "#38A169"
-                        
-                        st.markdown(
-                            f"""
-                            <div style="left: {position_percent}%;" class="timeline-marker" style="background-color: {color};"></div>
-                            <div style="left: {position_percent}%;" class="timeline-label-top">{milestone_date.strftime("%b %d")}</div>
-                            <div style="left: {position_percent}%;" class="timeline-label-bottom">{milestone["name"]}</div>
-                            """
-                            , unsafe_allow_html=True
-                        )
+                        if deleted_count > 0:
+                            st.success(f"Deleted {deleted_count} milestone(s).")
+                            # Clear the selection state
+                            if "milestones_to_delete" in st.session_state:
+                                del st.session_state.milestones_to_delete
+                            st.experimental_rerun()
+                        else:
+                            st.error("Failed to delete milestones.")
+                
+                # Export options (only show when not in edit mode)
+                if not edit_mode:
+                    st.markdown("#### Export Your Timeline")
                     
-                    st.markdown("</div>", unsafe_allow_html=True)
-                
-                # Display milestones in a more detailed view
-                st.markdown("#### Your Milestones")
-                
-                # Group milestones by month
-                milestones_by_month = {}
-                for milestone in filtered_milestones:
-                    date_obj = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
-                    month_key = date_obj.strftime("%B %Y")
-                    if month_key not in milestones_by_month:
-                        milestones_by_month[month_key] = []
-                    milestones_by_month[month_key].append(milestone)
-                
-                # Display milestones by month
-                for month, month_milestones in milestones_by_month.items():
-                    with st.expander(month, expanded=True):
-                        for milestone in month_milestones:
-                            col1, col2, col3 = st.columns([3, 2, 1])
-                            
-                            with col1:
-                                date_obj = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
-                                st.markdown(f"**{milestone['name']}** - {date_obj.strftime('%a, %b %d')}")
-                                st.markdown(f"_{milestone['description']}_")
-                            
-                            with col2:
-                                # Display type with appropriate color
-                                type_color = "#FF5A5F"
-                                if milestone["type"] == "pre-launch":
-                                    type_color = "#4299E1"
-                                elif milestone["type"] == "post-launch":
-                                    type_color = "#38A169"
-                                
-                                st.markdown(f"<span style='background-color: {type_color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;'>{milestone['type'].capitalize()}</span>", unsafe_allow_html=True)
-                                
-                                # Generate Google Calendar link
-                                google_link = generate_google_calendar_link(user_email, milestone["id"])
-                                st.markdown(f"<a href='{google_link}' target='_blank' style='font-size: 0.8rem;'>Add to Google Calendar</a>", unsafe_allow_html=True)
-                            
-                            with col3:
-                                if st.button("Delete", key=f"del_{milestone['id']}", use_container_width=True):
-                                    if delete_milestone(user_email, milestone["id"]):
-                                        st.success("Milestone deleted!")
-                                        st.experimental_rerun()
-                            
-                            st.markdown("---")
-                
-                # Export options
-                st.markdown("#### Export All Milestones")
-                
-                # Generate Google Calendar link for all milestones
-                google_link = generate_google_calendar_link(user_email)
-                st.markdown(f"<a href='{google_link}' target='_blank' class='export-button'>Export to Google Calendar</a>", unsafe_allow_html=True)
-                
-                st.info("This will open Google Calendar with your milestones ready to be added to your calendar.")
+                    # Generate Google Calendar link for all milestones
+                    google_link = generate_google_calendar_link(user_email)
+                    st.markdown(f"<a href='{google_link}' target='_blank' class='export-button'>Export to Google Calendar</a>", unsafe_allow_html=True)
+                    
+                    st.info("This will open Google Calendar with your milestones ready to be added to your calendar.")
     except Exception as e:
         st.error(f"An error occurred while displaying the calendar: {str(e)}")
         st.info("You can go back to your launch plan and try again later.")
