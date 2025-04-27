@@ -213,12 +213,12 @@ def pricing_section():
         unsafe_allow_html=True
     )
     
-    # Full-Service Option
+    # Full-Service Option with updated text
     st.markdown(
         '<div class="pricing-card">'
         '<p class="pricing-title">Full-Service</p>'
-        '<p class="pricing-price">$5K</p>'
-        '<p class="pricing-description">We run it for you</p>'
+        '<p class="pricing-price">$5K/mo</p>'
+        '<p class="pricing-description">Typically 3-6 months to launch</p>'
         '</div>',
         unsafe_allow_html=True
     )
