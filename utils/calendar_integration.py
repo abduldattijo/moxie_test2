@@ -87,6 +87,7 @@ def generate_google_calendar_link(user_email, milestone_id=None):
         str: Google Calendar URL
     """
     from datetime import datetime, timedelta
+    import urllib.parse
     
     # Get user milestones
     milestones = get_user_milestones(user_email)
@@ -106,41 +107,42 @@ def generate_google_calendar_link(user_email, milestone_id=None):
             
             details = milestone["description"]
             
-            # Create Google Calendar link with proper parameters
+            # Create Google Calendar link with proper URL encoding
             google_link = (
                 f"https://calendar.google.com/calendar/render?"
-                f"action=TEMPLATE&text={title.replace(' ', '+')}"
+                f"action=TEMPLATE&text={urllib.parse.quote(title)}"
                 f"&dates={start_date}/{end_date}"
-                f"&details={details.replace(' ', '+')}"
+                f"&details={urllib.parse.quote(details)}"
                 f"&sf=true&output=xml"
             )
             
             return google_link
     
-    # For all milestones - create a series of Google Calendar links
+    # For all milestones - limit to the first few to avoid URL length issues
     if milestones:
         # Sort milestones by date
         sorted_milestones = sorted(milestones, key=lambda x: x["date"])
         
-        # Start with base Google Calendar URL
-        google_link = "https://calendar.google.com/calendar/render?action=TEMPLATE"
+        # Google Calendar doesn't handle multiple events well in one URL
+        # Instead, let's create a link for the first event that should work reliably
+        milestone = sorted_milestones[0]
         
-        # Add each milestone as a separate event
-        for i, milestone in enumerate(sorted_milestones[:10]):  # Limit to 10 milestones to avoid URL length issues
-            title = milestone["name"]
-            # Format dates properly for Google Calendar
-            start_date = milestone["date"].replace("-", "")
-            # Calculate end date (next day for all-day events)
-            date_obj = datetime.strptime(milestone["date"], "%Y-%m-%d")
-            next_day = date_obj + timedelta(days=1)
-            end_date = next_day.strftime("%Y%m%d")
-            
-            details = f"{milestone['description']} ({milestone['type']})"
-            
-            # Use unique parameter names for each event
-            google_link += f"&src=none&text{i}={title.replace(' ', '+')}"
-            google_link += f"&dates{i}={start_date}/{end_date}"
-            google_link += f"&details{i}={details.replace(' ', '+')}"
+        title = milestone["name"]
+        start_date = milestone["date"].replace("-", "")
+        date_obj = datetime.strptime(milestone["date"], "%Y-%m-%d")
+        next_day = date_obj + timedelta(days=1)
+        end_date = next_day.strftime("%Y%m%d")
+        
+        details = (f"{milestone['description']} - This is the first of {len(sorted_milestones)} "
+                  f"milestones in your launch plan. Type: {milestone['type']}")
+        
+        google_link = (
+            f"https://calendar.google.com/calendar/render?"
+            f"action=TEMPLATE&text={urllib.parse.quote(title)}"
+            f"&dates={start_date}/{end_date}"
+            f"&details={urllib.parse.quote(details)}"
+            f"&sf=true&output=xml"
+        )
         
         return google_link
     
@@ -264,13 +266,14 @@ def create_suggested_milestones(launch_plan, user_email):
     
     return suggested_milestones
 
-def display_improved_timeline(milestones, deletable=False):
+def display_improved_timeline(milestones, deletable=False, user_email=None):
     """
     Display an improved timeline visualization of milestones
     
     Args:
         milestones (list): List of milestone dictionaries
         deletable (bool): Whether to show delete checkboxes
+        user_email (str, optional): User's email for calendar links
     """
     # Sort milestones by date
     import datetime
@@ -400,14 +403,17 @@ def display_improved_timeline(milestones, deletable=False):
             # List milestones with cards - improved card design
             for milestone in grouped_milestones[phase_type]:
                 milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
+                milestone_id = milestone["id"]
                 
-                # Create a row with checkbox (if deletable) and milestone info
-                cols = st.columns([0.1, 0.9]) if deletable else [st.container()]
+                # Create columns with appropriate sizing based on mode
+                if deletable:
+                    cols = st.columns([0.1, 0.7, 0.2])
+                else:
+                    cols = st.columns([0.8, 0.2])
                 
                 # Add checkbox for deletion if in deletable mode
                 if deletable:
                     with cols[0]:
-                        milestone_id = milestone["id"]
                         is_selected = milestone_id in st.session_state.milestones_to_delete
                         if st.checkbox("", value=is_selected, key=f"delete_{milestone_id}"):
                             if milestone_id not in st.session_state.milestones_to_delete:
@@ -416,8 +422,8 @@ def display_improved_timeline(milestones, deletable=False):
                             if milestone_id in st.session_state.milestones_to_delete:
                                 st.session_state.milestones_to_delete.remove(milestone_id)
                 
-                # Display milestone card with improved design
-                with cols[-1]:
+                # Display milestone card
+                with cols[1 if deletable else 0]:
                     st.markdown(f"""
                     <div style="margin: 12px 0; padding: 16px; border-left: 4px solid {type_colors[phase_type]}; 
                                 background-color: #F7FAFC; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
@@ -431,6 +437,25 @@ def display_improved_timeline(milestones, deletable=False):
                         <p style="margin: 0; color: #4A5568; font-size: 0.95rem;">{milestone["description"]}</p>
                     </div>
                     """, unsafe_allow_html=True)
+                
+                # Add calendar button for each milestone if user_email is provided
+                if user_email and not deletable:
+                    with cols[-1]:
+                        # Generate calendar link for this specific milestone
+                        calendar_link = generate_google_calendar_link(user_email, milestone_id)
+                        st.markdown(f"""
+                        <a href="{calendar_link}" target="_blank" style="display: inline-block; 
+                           margin-top: 12px; text-decoration: none; color: white; 
+                           background-color: #4285F4; padding: 8px 12px; 
+                           border-radius: 4px; font-size: 0.8rem; text-align: center;
+                           white-space: nowrap; width: 100%;">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                              viewBox="0 0 16 16" style="vertical-align: text-bottom; margin-right: 5px;">
+                              <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM4.5 7.5a.5.5 0 0 1 0-1h5.793L8.146 4.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 7.5H4.5Z"/>
+                           </svg>
+                           Add to Calendar
+                        </a>
+                        """, unsafe_allow_html=True)
     
     # Return list of milestone IDs to delete
     if deletable:
@@ -516,11 +541,12 @@ def milestone_calendar_ui(user_email, launch_plan=None):
                 edit_mode = st.checkbox("Edit Mode (Select milestones to delete)", value=False)
                 
                 # Use the improved timeline display with delete checkboxes if in edit mode
-                milestones_to_delete = display_improved_timeline(user_milestones, deletable=edit_mode)
+                # Pass the user_email to the display function
+                milestones_to_delete = display_improved_timeline(user_milestones, deletable=edit_mode, user_email=user_email)
                 
                 # Show delete button if in edit mode and milestones are selected
                 if edit_mode and milestones_to_delete:
-                    if st.button(f"Delete Selected Milestones ({len(milestones_to_delete)})", type="primary"):
+                    if st.button(f"Delete Selected Milestones ({len(milestones_to_delete)})"):
                         deleted_count = 0
                         for milestone_id in milestones_to_delete:
                             if delete_milestone(user_email, milestone_id):
@@ -535,15 +561,9 @@ def milestone_calendar_ui(user_email, launch_plan=None):
                         else:
                             st.error("Failed to delete milestones.")
                 
-                # Export options (only show when not in edit mode)
+                # Add helpful info text instead of the Export section
                 if not edit_mode:
-                    st.markdown("#### Export Your Timeline")
-                    
-                    # Generate Google Calendar link for all milestones
-                    google_link = generate_google_calendar_link(user_email)
-                    st.markdown(f"<a href='{google_link}' target='_blank' class='export-button'>Export to Google Calendar</a>", unsafe_allow_html=True)
-                    
-                    st.info("This will open Google Calendar with your milestones ready to be added to your calendar.")
+                    st.info("Click the 'Add to Calendar' button next to any milestone to add it to your Google Calendar.")
     except Exception as e:
         st.error(f"An error occurred while displaying the calendar: {str(e)}")
         st.info("You can go back to your launch plan and try again later.")
