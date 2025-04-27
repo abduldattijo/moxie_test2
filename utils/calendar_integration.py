@@ -313,20 +313,83 @@ def display_improved_timeline(milestones, deletable=False):
     if sorted_milestones:
         min_date = datetime.datetime.strptime(sorted_milestones[0]["date"], "%Y-%m-%d")
         max_date = datetime.datetime.strptime(sorted_milestones[-1]["date"], "%Y-%m-%d")
-        total_days = (max_date - min_date).days
         
         # Add some padding to the timeline
-        min_date = min_date - datetime.timedelta(days=2)
-        max_date = max_date + datetime.timedelta(days=2)
+        min_date = min_date - datetime.timedelta(days=7)  # Increased padding
+        max_date = max_date + datetime.timedelta(days=7)  # Increased padding
         total_days = (max_date - min_date).days + 1  # Add 1 to avoid division by zero
         
-        # Display timeline header with start and end dates
+        # Calculate weeks for better labeling
+        total_weeks = (total_days // 7) + 1
+        
+        # Display timeline header with cleaner date format and more space
         st.markdown(f"""
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; color: #666;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 1rem; color: #666; font-weight: 500;">
             <span>{min_date.strftime('%b %d, %Y')}</span>
             <span>{max_date.strftime('%b %d, %Y')}</span>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Create main timeline container
+        st.markdown("""
+        <div style="position: relative; height: 100px; margin-bottom: 30px; background-color: #f8f9fa; border-radius: 8px; padding: 10px;">
+            <div style="position: absolute; top: 50px; left: 0; right: 0; height: 3px; background-color: #E2E8F0;"></div>
+        """, unsafe_allow_html=True)
+        
+        # Group milestones by date to prevent overlap
+        date_grouped_milestones = {}
+        for milestone in sorted_milestones:
+            date = milestone["date"]
+            if date not in date_grouped_milestones:
+                date_grouped_milestones[date] = []
+            date_grouped_milestones[date].append(milestone)
+        
+        # Add milestone markers - with improved spacing for grouped items
+        for date, ms_group in date_grouped_milestones.items():
+            milestone_date = datetime.datetime.strptime(date, "%Y-%m-%d")
+            position_percent = ((milestone_date - min_date).days / total_days) * 100
+            
+            # Get the dominant type for this date group
+            types = [m.get("type", "pre-launch") for m in ms_group]
+            dominant_type = max(set(types), key=types.count)  # Most common type
+            
+            # Create a larger marker for grouped milestones
+            marker_size = min(10 + (len(ms_group) * 2), 18)  # Larger for more milestones, but with a cap
+            
+            # Only show every other date label to reduce clutter
+            show_label = (milestone_date.day % 3 == 0) or len(ms_group) > 1
+            
+            # Format milestone tooltip
+            tooltip_content = "<br>".join([f"{m['name']} ({m['type']})" for m in ms_group])
+            
+            st.markdown(f"""
+            <div style="position: absolute; top: {46 - marker_size/2}px; left: {position_percent}%; 
+                        width: {marker_size}px; height: {marker_size}px; 
+                        border-radius: 50%; background-color: {type_colors[dominant_type]}; 
+                        transform: translateX(-{marker_size/2}px); 
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
+                        cursor: pointer; 
+                        display: flex; align-items: center; justify-content: center; 
+                        color: white; font-weight: bold; font-size: {marker_size/2}px;"
+                        title="{tooltip_content}">
+                {len(ms_group) if len(ms_group) > 1 else ""}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Show date labels with improved spacing
+            if show_label:
+                st.markdown(f"""
+                <div style="position: absolute; top: 65px; left: {position_percent}%; 
+                            transform: translateX(-50%) rotate(-45deg); 
+                            font-size: 0.7rem; white-space: nowrap; 
+                            transform-origin: top left; 
+                            color: #555; font-weight: 500;">
+                    {milestone_date.strftime('%b %d')}
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Close main timeline container
+        st.markdown("</div>", unsafe_allow_html=True)
     
     # Create expandable sections for each phase type
     for phase_type in ['pre-launch', 'launch', 'post-launch']:
@@ -334,28 +397,7 @@ def display_improved_timeline(milestones, deletable=False):
             continue
             
         with st.expander(f"{type_titles[phase_type]} ({len(grouped_milestones[phase_type])} milestones)", expanded=True):
-            # Create a visual timeline
-            if sorted_milestones:
-                st.markdown("""
-                <div style="position: relative; height: 60px; margin-bottom: 20px;">
-                    <div style="position: absolute; top: 30px; left: 0; right: 0; height: 2px; background-color: #E2E8F0;"></div>
-                """, unsafe_allow_html=True)
-                
-                # Add milestone markers
-                for milestone in grouped_milestones[phase_type]:
-                    milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
-                    position_percent = ((milestone_date - min_date).days / total_days) * 100
-                    
-                    st.markdown(f"""
-                    <div style="position: absolute; top: 26px; left: {position_percent}%; width: 10px; height: 10px; 
-                                border-radius: 50%; background-color: {type_colors[phase_type]}; transform: translateX(-5px);"></div>
-                    <div style="position: absolute; top: 40px; left: {position_percent}%; transform: translateX(-50%); 
-                                font-size: 0.7rem; white-space: nowrap;">{milestone_date.strftime('%b %d')}</div>
-                    """, unsafe_allow_html=True)
-                
-                st.markdown("</div>", unsafe_allow_html=True)
-            
-            # List milestones with cards
+            # List milestones with cards - improved card design
             for milestone in grouped_milestones[phase_type]:
                 milestone_date = datetime.datetime.strptime(milestone["date"], "%Y-%m-%d")
                 
@@ -374,16 +416,19 @@ def display_improved_timeline(milestones, deletable=False):
                             if milestone_id in st.session_state.milestones_to_delete:
                                 st.session_state.milestones_to_delete.remove(milestone_id)
                 
-                # Display milestone card
+                # Display milestone card with improved design
                 with cols[-1]:
                     st.markdown(f"""
-                    <div style="margin: 12px 0; padding: 12px; border-left: 4px solid {type_colors[phase_type]}; 
-                                background-color: #F7FAFC; border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                            <span style="font-weight: 600; font-size: 1rem;">{milestone["name"]}</span>
-                            <span style="color: #666; font-size: 0.9rem;">{milestone_date.strftime('%a, %b %d')}</span>
+                    <div style="margin: 12px 0; padding: 16px; border-left: 4px solid {type_colors[phase_type]}; 
+                                background-color: #F7FAFC; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+                            <span style="font-weight: 600; font-size: 1.05rem; color: #2D3748;">{milestone["name"]}</span>
+                            <span style="color: #4A5568; font-size: 0.9rem; background-color: #EDF2F7; 
+                                        padding: 3px 8px; border-radius: 12px;">
+                                {milestone_date.strftime('%a, %b %d')}
+                            </span>
                         </div>
-                        <p style="margin: 0; color: #4A5568; font-size: 0.9rem;">{milestone["description"]}</p>
+                        <p style="margin: 0; color: #4A5568; font-size: 0.95rem;">{milestone["description"]}</p>
                     </div>
                     """, unsafe_allow_html=True)
     
@@ -391,7 +436,6 @@ def display_improved_timeline(milestones, deletable=False):
     if deletable:
         return st.session_state.milestones_to_delete
     return []
-
 
 def milestone_calendar_ui(user_email, launch_plan=None):
     """
