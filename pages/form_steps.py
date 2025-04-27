@@ -212,7 +212,7 @@ def step_8():
             "Healthcare": "🏥",
             "Enterprise Software": "🏢",
             "AI/ML": "🤖",
-            "Productivity Tools": "⚡"
+            "Service": "🛎️"
         }
         
         options = []
